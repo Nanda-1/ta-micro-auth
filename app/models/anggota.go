@@ -9,7 +9,7 @@ import (
 
 type Anggota struct {
 	Id         int            `json:"id" gorm:"primarykey"`
-	NRA        string         `json:"nra" gorm:"unique"`
+	Username   string         `json:"username" gorm:"unique"`
 	Password   string         `json:"password"`
 	Role       *Roles         `json:"role" gorm:"constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
 	Role_id    int            `json:"role_id" gorm:"constraint:OnDelete:CASCADE,OnUpdate:CASCADE;foreignKey:role_id"`
@@ -20,6 +20,7 @@ type Anggota struct {
 
 type AnggotaDetail struct {
 	Id           int       `json:"id" gorm:"primarykey"`
+	NRA          string    `json:"nra" gorm:"unique"`
 	Name         string    `json:"name"`
 	Email        string    `json:"email" gorm:"unique"`
 	Phone_Number string    `json:"phone_number"`
@@ -62,9 +63,9 @@ func FindUserById(db *gorm.DB, Id int) (*Anggota, error) {
 	}
 	return &user, nil
 }
-func FindUserByNRA(db *gorm.DB, nra string) (*Anggota, error) {
+func FindUserByNRA(db *gorm.DB, username string) (*Anggota, error) {
 	var user Anggota
-	err := db.Where("nra = ?", nra).First(&user).Error
+	err := db.Where("username = ?", username).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -107,4 +108,12 @@ func GetAnggotaDetailById(id int) (*AnggotaDetail, error) {
 		return nil, result.Error
 	}
 	return &anggotaDetail, nil
+}
+
+func TotalAnggota() (int64, error) {
+	var count int64
+	if err := db.Db.Table("anggota_detail").Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }

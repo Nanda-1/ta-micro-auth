@@ -69,7 +69,7 @@ func (auth *AuthRepo) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := models.FindUserByNRA(auth.Db, req.NRA)
+	user, err := models.FindUserByNRA(auth.Db, req.Username)
 	if err != nil {
 		errorMsg := "Invalid credentials."
 		res.Success = false
@@ -88,13 +88,13 @@ func (auth *AuthRepo) Login(c *gin.Context) {
 		return
 	}
 
-	accessToken := GenerateToken(user.NRA, "access_token", time.Now().Add(15*time.Minute))
-	refreshToken := GenerateToken(user.NRA, "refresh_token", time.Now().AddDate(0, 0, 5))
+	accessToken := GenerateToken(user.Username, "access_token", time.Now().Add(15*time.Minute))
+	refreshToken := GenerateToken(user.Username, "refresh_token", time.Now().AddDate(0, 0, 5))
 
 	resObj := map[string]interface{}{
 		"user": map[string]interface{}{
-			"NRA":     user.NRA,
-			"Role_id": user.Role_id,
+			"Username": user.Username,
+			"Role_id":  user.Role_id,
 		},
 		"token": map[string]string{
 			"access_token":  accessToken,
@@ -166,7 +166,7 @@ func (auth *AuthRepo) CreateAnggota(c *gin.Context) {
 		return
 	}
 
-	_, err := models.FindUserByNRA(auth.Db, req.NRA)
+	_, err := models.FindUserByNRA(auth.Db, req.Username)
 	if err == nil {
 		errorMsg := "User already exists"
 		res.Success = false
@@ -176,10 +176,11 @@ func (auth *AuthRepo) CreateAnggota(c *gin.Context) {
 	}
 
 	user := &models.Anggota{
-		NRA:      req.NRA,
+		Username: req.Username,
 		Password: req.Password,
 		Role_id:  req.Role_id,
 		Detail: &models.AnggotaDetail{
+			NRA:          req.Detail.NRA,
 			Name:         req.Detail.Name,
 			Email:        req.Detail.Email,
 			Phone_Number: req.Detail.Phone_Number,
@@ -209,8 +210,8 @@ func (auth *AuthRepo) CreateAnggota(c *gin.Context) {
 
 	res.Data = map[string]interface{}{
 		"id":       user.Id,
-		"NRA":      user.NRA,
 		"role":     user.Role.Name,
+		"nra":      user.Detail.NRA,
 		"name":     user.Detail.Name,
 		"email":    user.Detail.Email,
 		"phone":    user.Detail.Phone_Number,
@@ -224,9 +225,9 @@ func (auth *AuthRepo) CreateAnggota(c *gin.Context) {
 func (repo *AuthRepo) GetAllAnggota(c *gin.Context) {
 	res := models.JsonResponse{Success: true}
 
-	var anggota []models.Anggota
+	var anggota []models.AnggotaDetail
 
-	if err := repo.Db.Preload("Detail").Find(&anggota).Error; err != nil {
+	if err := repo.Db.Find(&anggota).Error; err != nil {
 		errorMsg := err.Error()
 		res.Success = false
 		res.Error = &errorMsg
@@ -234,6 +235,31 @@ func (repo *AuthRepo) GetAllAnggota(c *gin.Context) {
 		return
 	}
 
+	// if err := repo.Db.Preload("Detail").Find(&anggota).Error; err != nil {
+	// 	errorMsg := err.Error()
+	// 	res.Success = false
+	// 	res.Error = &errorMsg
+	// 	c.JSON(http.StatusInternalServerError, res)
+	// 	return
+	// }
+
 	res.Data = anggota
 	c.JSON(http.StatusOK, res)
+}
+
+func (repo *AuthRepo) TotalAnggota(c *gin.Context) {
+	res := models.JsonResponse{Success: true}
+
+	total, err := models.TotalAnggota()
+	if err != nil {
+		res.Success = false
+		MsgErr := err.Error()
+		res.Error = &MsgErr
+		c.JSON(400, res)
+		return
+	}
+
+	res.Data = total
+
+	c.JSON(200, res)
 }

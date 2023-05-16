@@ -29,9 +29,11 @@ func SetupRouter(RepoAuth controllers.AuthRepo, RepoSeeder controllers.DbSeeder)
 	// protectedRouter.POST("/seeder", api.RepoSeeder.RunSeeder)
 
 	SeederRoter := r.Group("/api")
-	SeederRoter.Use(middleware.ApiKey(), middleware.ReqJson(), middleware.IsAdmin(), middleware.Jwt())
+	SeederRoter.Use(middleware.ApiKey(), middleware.ReqJson(), middleware.Jwt())
 	SeederRoter.POST("/register", api.RepoAuth.CreateAnggota)
 	SeederRoter.GET("/get-all", api.RepoAuth.GetAllAnggota)
+	SeederRoter.GET("/total", api.RepoAuth.TotalAnggota)
+
 	protectedRouter.POST("/seeder", api.RepoSeeder.RunSeeder)
 	return r
 }
