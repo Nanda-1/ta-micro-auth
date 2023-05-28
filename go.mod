@@ -28,6 +28,7 @@ require (
 )
 
 require (
+	github.com/aws/aws-lambda-go v1.41.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jinzhu/inflection v1.0.0 // indirect
