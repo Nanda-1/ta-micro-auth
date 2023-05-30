@@ -9,9 +9,9 @@ import (
 )
 
 const DB_USERNAME = "root"
-const DB_PASSWORD = ""
+const DB_PASSWORD = "nanda123"
 const DB_NAME = "ta-micro-auth"
-const DB_HOST = "127.0.0.1"
+const DB_HOST = "mysql"
 const DB_PORT = "3306"
 
 var Db *gorm.DB
