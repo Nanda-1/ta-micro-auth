@@ -186,7 +186,11 @@ func (auth *AuthRepo) CreateAnggota(c *gin.Context) {
 			Phone_Number: req.Detail.Phone_Number,
 			Address:      req.Detail.Address,
 			Divisi:       req.Detail.Divisi,
+			Created_at:   time.Now(),
+			Updated_at:   time.Now(),
 		},
+		Created_at: time.Now(),
+		Updated_at: time.Now(),
 	}
 
 	err = auth.Db.Create(&user).Error
