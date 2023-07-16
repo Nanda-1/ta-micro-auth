@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"ta_microservice_auth/app/helper"
 	"ta_microservice_auth/app/models"
 	"ta_microservice_auth/db"
 	"time"
@@ -69,9 +70,17 @@ func (auth *AuthRepo) Login(c *gin.Context) {
 		return
 	}
 
+	if req.Username == "" || req.Password == "" {
+		errorMsg := "Username atau Password tidak boleh kosong"
+		res.Success = false
+		res.Error = &errorMsg
+		c.JSON(400, res)
+		return
+	}
+
 	user, err := models.FindUserByNRA(auth.Db, req.Username)
 	if err != nil {
-		errorMsg := "Invalid credentials."
+		errorMsg := "Username atau password salah."
 		res.Success = false
 		res.Error = &errorMsg
 		c.JSON(400, res)
@@ -79,8 +88,10 @@ func (auth *AuthRepo) Login(c *gin.Context) {
 		return
 	}
 
-	if req.Password != user.Password {
-		errorMsg := "Invalid credentials."
+	// compare password
+	pass := helper.ComparePasswords(req.Password, user.Password)
+	if !pass {
+		errorMsg := "Username atau password salah."
 		res.Success = false
 		res.Error = &errorMsg
 		c.JSON(400, res)
@@ -102,6 +113,7 @@ func (auth *AuthRepo) Login(c *gin.Context) {
 		},
 	}
 
+	// c.Set("Role_id", user.Role_id)
 	res.Data = resObj
 	c.JSON(200, res)
 }
@@ -151,7 +163,6 @@ func (auth *AuthRepo) RefreshToken(c *gin.Context) {
 	}
 
 	c.JSON(200, res)
-
 }
 
 func (auth *AuthRepo) CreateAnggota(c *gin.Context) {
@@ -160,6 +171,14 @@ func (auth *AuthRepo) CreateAnggota(c *gin.Context) {
 
 	if err := c.BindJSON(&req); err != nil {
 		errorMsg := err.Error()
+		res.Success = false
+		res.Error = &errorMsg
+		c.JSON(400, res)
+		return
+	}
+
+	if req.Detail.NRA == "" || req.Detail.Name == "" {
+		errorMsg := "NRA atau Name tidak boleh kosong"
 		res.Success = false
 		res.Error = &errorMsg
 		c.JSON(400, res)
@@ -175,9 +194,11 @@ func (auth *AuthRepo) CreateAnggota(c *gin.Context) {
 		return
 	}
 
+	password := helper.Sha256(req.Password)
+
 	user := &models.Anggota{
 		Username: req.Username,
-		Password: req.Password,
+		Password: password,
 		Role_id:  req.Role_id,
 		Detail: &models.AnggotaDetail{
 			NRA:          req.Detail.NRA,

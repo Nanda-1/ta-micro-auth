@@ -26,6 +26,7 @@ func SetupRouter(RepoAuth controllers.AuthRepo, RepoSeeder controllers.DbSeeder)
 	protectedRouter.Use(middleware.ApiKey(), middleware.ReqJson())
 	protectedRouter.POST("/login", api.RepoAuth.Login)
 	protectedRouter.POST("/refresh", api.RepoAuth.RefreshToken)
+	// protectedRouter.POST("excel", api.RepoAuth.InsertDataFromExcel)
 	// protectedRouter.POST("/seeder", api.RepoSeeder.RunSeeder)
 
 	SeederRoter := r.Group("/api")
