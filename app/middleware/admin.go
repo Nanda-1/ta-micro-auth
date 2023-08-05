@@ -1,33 +1,75 @@
 package middleware
 
 import (
+	"net/http"
+	"strings"
+	"ta_microservice_auth/app/controllers"
 	"ta_microservice_auth/app/models"
-	"ta_microservice_auth/db"
 
 	"github.com/gin-gonic/gin"
 )
 
 func IsAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userId, _ := c.Get("id")
-		// if !ok {
-		// 	c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
-		// 	return
-		// }
+		res := models.JsonResponse{Success: true}
 
-		user := &models.Anggota{}
-		err := db.Db.Preload("Role").First(user, userId).Error
-		if err != nil {
-			c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
+		if len(strings.Split(c.Request.Header.Get("Authorization"), " ")) != 2 {
+			errorMsg := "invalid token"
+			res.Success = false
+			res.Error = &errorMsg
+			c.JSON(http.StatusUnauthorized, res)
+			c.Abort()
 			return
 		}
 
-		if user.Role == nil || user.Role.Name != "admin" {
-			c.AbortWithStatusJSON(403, gin.H{"error": "Forbidden"})
+		accessToken := strings.Split(c.Request.Header.Get("Authorization"), " ")[1]
+
+		claims, err := controllers.DecodeToken(accessToken)
+		if err != nil {
+			// Token decoding error, return 401 Unauthorized
+			errorMsg := err.Error()
+			res.Success = false
+			res.Error = &errorMsg
+			c.JSON(http.StatusUnauthorized, res)
+			c.Abort()
+			return
+		}
+
+		role, found := claims["role_id"]
+		if !found {
+			errMsg := "role_id not found in token"
+			res.Success = false
+			res.Error = &errMsg
+			c.JSON(http.StatusUnauthorized, res)
+			c.Abort()
+			return
+		}
+		// Check the underlying type of role and convert to int if needed
+		var roleInt int
+		switch role.(type) {
+		case float64:
+			roleInt = int(role.(float64))
+		case int:
+			roleInt = role.(int)
+		default:
+			errMsg := "Invalid role_id type in token"
+			res.Success = false
+			res.Error = &errMsg
+			c.JSON(http.StatusUnauthorized, res)
+			c.Abort()
+			return
+		}
+
+		// Periksa apakah role_id = 1
+		if roleInt != 1 {
+			errMsg := "Hanyan Admin Yang Bisa Menambahkan Data"
+			res.Success = false
+			res.Error = &errMsg
+			c.JSON(http.StatusUnauthorized, res)
+			c.Abort()
 			return
 		}
 
 		c.Next()
-
 	}
 }

@@ -27,10 +27,11 @@ func NewAuth() *AuthRepo {
 
 var SECRET = []byte(os.Getenv("SECRET.KEY"))
 
-func GenerateToken(username string, tokenType string, exp time.Time) string {
+func GenerateToken(username string, role_id int, tokenType string, exp time.Time) string {
 	// user := models.Auth{}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username":   username,
+		"role_id":    role_id,
 		"token_type": tokenType,
 		"exp":        exp.Unix(),
 	})
@@ -99,8 +100,8 @@ func (auth *AuthRepo) Login(c *gin.Context) {
 		return
 	}
 
-	accessToken := GenerateToken(user.Username, "access_token", time.Now().Add(15*time.Minute))
-	refreshToken := GenerateToken(user.Username, "refresh_token", time.Now().AddDate(0, 0, 5))
+	accessToken := GenerateToken(user.Username, user.Role_id, "access_token", time.Now().Add(15*time.Minute))
+	refreshToken := GenerateToken(user.Username, user.Role_id, "refresh_token", time.Now().AddDate(0, 0, 5))
 
 	resObj := map[string]interface{}{
 		"user": map[string]interface{}{
@@ -149,6 +150,16 @@ func (auth *AuthRepo) RefreshToken(c *gin.Context) {
 		return
 	}
 
+	role, found := claims["role_id"].(int)
+	if !found {
+		res.Success = false
+		msgErr := "Refresh Token is invalid"
+		res.Error = &msgErr
+		c.JSON(401, res)
+		c.Abort()
+		return
+	}
+
 	if claims["token_type"] != "refresh_token" {
 		res.Success = false
 		msgErr := "Refresh Token is invalid"
@@ -158,8 +169,8 @@ func (auth *AuthRepo) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	res.Data = map[string]string{
-		"access_token": GenerateToken(username.(string), "access_token", time.Now().Add(15*time.Minute)),
+	res.Data = map[string]interface{}{
+		"access_token": GenerateToken(username.(string), role, "access_token", time.Now().Add(15*time.Minute)),
 	}
 
 	c.JSON(200, res)
